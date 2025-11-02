@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaSearch, FaUserCircle } from 'react-icons/fa';
+import UserRoleBadge from './UserRoleBadge';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -57,8 +58,9 @@ const Navbar = () => {
                     </div>
                 </div>
                 
-                {/* Profile Menu */}
-                <div className="flex-row gap-7 hidden lg:flex">
+                {/* User Actions & Profile Menu */}
+                <div className="flex-row gap-7 hidden lg:flex items-center">
+                    <UserRoleBadge />
                     <ProfileMenu />
                 </div>
 
@@ -112,10 +114,13 @@ const MobileMenu = () => {
             {/* Navigation Items */}
             <div className="space-y-4">
                 <NavbarItem label="Sobre nosotros" />
+                <Link href="/my-tickets" className="block text-gray-200 hover:text-white cursor-pointer">
+                    <i className="fa-regular fa-ticket mr-2"></i>
+                    Mis Entradas
+                </Link>
                 <NavbarItem label="Mis eventos" />
                 <NavbarItem label="Próximos eventos" />
                 <NavbarItem label="Cerrar sesión" />
-                
             </div>
         </div>
     );

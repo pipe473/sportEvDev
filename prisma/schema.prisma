@@ -21,12 +21,14 @@ model User {
   email String? @unique
   emailVerified DateTime?
   hashedPassword String?
+  role String @default("user") // "user" or "organizer"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   favoriteIds String[] @db.ObjectId
   sessions Session[]
   accounts Account[]
   favorites Favorite[]
+  tickets Ticket[]
   resetToken       String?
   resetTokenExpiry DateTime?
 }
@@ -77,6 +79,8 @@ model Event {
   category      String
   imageUrl      String
   favorites     Favorite[]
+  tickets       Ticket[]
+  ticketTypes   TicketType[]
   alt           String
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -91,4 +95,42 @@ model Favorite {
   createdAt DateTime @default(now())
 
   @@unique([userId, eventId])
+}
+
+model TicketType {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventId     String   @db.ObjectId
+  name        String   // ej: "General", "VIP", "Palco"
+  price       Float    // Precio en euros/dólares
+  quantity    Int      // Cantidad disponible
+  sold        Int      @default(0) // Cantidad vendida
+  description String?
+  event       Event    @relation(fields: [eventId], references: [id])
+  tickets     Ticket[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Ticket {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  ticketNumber  String     @unique // Número único de entrada
+  eventId       String     @db.ObjectId
+  userId        String     @db.ObjectId
+  ticketTypeId  String     @db.ObjectId
+  qrCode        String     @unique // Código QR único
+  qrCodeImage   String?    // Base64 de la imagen QR (opcional, puede generarse on-demand)
+  paymentStatus String     @default("pending") // pending, paid, failed, refunded
+  paymentIntentId String?  // ID del payment intent de Stripe/PayPal
+  price         Float      // Precio pagado
+  isUsed        Boolean    @default(false)
+  usedAt        DateTime? // Fecha/hora de uso
+  validatedBy   String?   // ID del organizador que validó
+  event         Event      @relation(fields: [eventId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
 }
