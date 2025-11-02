@@ -1,12 +1,11 @@
 import NextAuth, { AuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prismadb from '@/lib/prismadb';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
-const authOptions: AuthOptions = {
-    adapter: PrismaAdapter(prismadb),
+export const authOptions: AuthOptions = {
+    // No adapter needed when using JWT strategy - sessions are stored in JWT tokens, not database
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -49,9 +48,10 @@ const authOptions: AuthOptions = {
     pages: {
         signIn: '/login',
     },
-    debug: process.env.NODE_ENV === 'development',
+    debug: false, // Disable debug to reduce excessive requests
     session: {
         strategy: 'jwt' as const,
+        maxAge: 30 * 24 * 60 * 60, // 30 days
     },
     secret: process.env.NEXTAUTH_SECRET,
 };

@@ -1,19 +1,18 @@
 "use client";
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const SessionTimeout = () => {
-  const { data: session } = useSession();
   const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let inactivityTimer: NodeJS.Timeout;
-
     const resetTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
         router.push('/start');
       }, 30 * 60 * 1000); // 30 minutes
     };
@@ -27,7 +26,9 @@ const SessionTimeout = () => {
     resetTimer();
 
     return () => {
-      clearTimeout(inactivityTimer);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       events.forEach(event => {
         document.removeEventListener(event, resetTimer);
       });

@@ -5,7 +5,16 @@ import { authOptions } from '../../../pages/api/auth/[...nextauth]';
 
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        // Manejar errores de autenticación de manera más robusta
+        let session;
+        try {
+            session = await getServerSession(authOptions);
+        } catch (authError) {
+            // Si hay un error de autenticación, simplemente retornar array vacío
+            console.warn('Auth error in favorites GET (non-critical):', authError);
+            return NextResponse.json([], { status: 200 });
+        }
+
         if (!session?.user?.email) {
             return NextResponse.json([], { status: 200 });
         }
@@ -24,14 +33,22 @@ export async function GET() {
 
         return NextResponse.json(favorites);
     } catch (error) {
-        console.error('Error in favorites:', error);
+        console.error('Error in favorites GET:', error);
+        // Retornar array vacío en lugar de error 500 para evitar romper la UI
         return NextResponse.json([], { status: 200 });
     }
 }
 
 export async function DELETE(request: Request) {
     try {
-        const session = await getServerSession(authOptions);
+        let session;
+        try {
+            session = await getServerSession(authOptions);
+        } catch (authError) {
+            console.warn('Auth error in favorites DELETE:', authError);
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -43,10 +60,14 @@ export async function DELETE(request: Request) {
             where: { email: session.user.email }
         });
 
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
         await prismadb.favorite.delete({
             where: {
                 userId_eventId: {
-                    userId: user!.id,
+                    userId: user.id,
                     eventId: eventId
                 }
             }
@@ -54,15 +75,26 @@ export async function DELETE(request: Request) {
 
         return NextResponse.json({ message: 'Favorite removed' });
     } catch (error) {
-        return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+        console.error('Error in favorites DELETE:', error);
+        return NextResponse.json({ 
+            error: 'Internal error',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
-        const session = await getServerSession(authOptions);
+        let session;
+        try {
+            session = await getServerSession(authOptions);
+        } catch (authError) {
+            console.warn('Auth error in favorites POST:', authError);
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         if (!session?.user?.email) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const user = await prismadb.user.findUnique({
@@ -70,10 +102,14 @@ export async function POST(request: Request) {
         });
 
         if (!user) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
         const { eventId } = await request.json();
+
+        if (!eventId) {
+            return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+        }
 
         const favorite = await prismadb.favorite.create({
             data: {
@@ -84,7 +120,10 @@ export async function POST(request: Request) {
 
         return NextResponse.json(favorite);
     } catch (error) {
-        console.error('Error in favorites:', error);
-        return NextResponse.json([], { status: 200 });
+        console.error('Error in favorites POST:', error);
+        return NextResponse.json({ 
+            error: 'Error creating favorite',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
     }
 } 

@@ -9,14 +9,7 @@ import Footer from '@/app/components/Footer';
 
 // Profile Menu Component
 export const ProfileMenu = () => {
-    const { data: session, update } = useSession();
-
-    // Force rerender when session changes
-    useEffect(() => {
-        if (session?.user) {
-            update();
-        }
-    }, [session?.user?.name, session?.user?.image]);
+    const { data: session } = useSession();
 
     return (
         <Link href="/profile" className="flex flex-row items-center gap-2 cursor-pointer">

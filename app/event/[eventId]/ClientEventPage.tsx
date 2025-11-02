@@ -29,12 +29,22 @@ export default function ClientEventPage({ eventId, category }: ClientEventPagePr
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        // Validar que eventId existe antes de hacer la petición
+        if (!eventId || eventId === 'undefined') {
+            setIsLoading(false);
+            return;
+        }
+
         const fetchEvent = async () => {
             try {
                 const response = await fetch(`/api/events?id=${eventId}`);
-                if (!response.ok) throw new Error('Failed to fetch event');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch event: ${response.status}`);
+                }
                 const data = await response.json();
-                if (!data) throw new Error('No event data');
+                if (!data) {
+                    throw new Error('No event data');
+                }
                 
                 setEvent({
                     id: data.id,

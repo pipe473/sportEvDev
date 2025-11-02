@@ -10,7 +10,29 @@ async function getEvents() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events`, {
             cache: 'no-store'  // This ensures fresh data
         });
-        const data = await response.json();
+
+        // Check if response is ok
+        if (!response.ok) {
+            console.error('API response not ok:', response.status, response.statusText);
+            return [];
+        }
+
+        // Check if response has content
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+            console.warn('Empty response from API');
+            return [];
+        }
+
+        // Try to parse JSON
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError);
+            console.error('Response text:', text);
+            return [];
+        }
         
         console.log('Raw API response:', data);
         
